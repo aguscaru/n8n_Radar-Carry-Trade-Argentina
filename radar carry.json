@@ -1,0 +1,588 @@
+{
+  "name": "Radar Carry Trade Argentina",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "135d4e4e-7f0e-4bad-bd93-2a09410fbd4c",
+      "name": "horario9am"
+    },
+    {
+      "parameters": {
+        "url": "https://dolarapi.com/v1/dolares/bolsa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "8cebeaf1-6e8d-429c-af51-3147dbbdc58e",
+      "name": "MEP hoy"
+    },
+    {
+      "parameters": {
+        "url": "https://api.argentinadatos.com/v1/cotizaciones/dolares/bolsa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        432,
+        176
+      ],
+      "id": "c28da4a9-5e98-4138-8eac-d46800a7cc07",
+      "name": "MEP hace 30d"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        880,
+        176
+      ],
+      "id": "55c613b7-5e31-45cf-aba8-c5422d4f02b1",
+      "name": "MEP hace 30d1"
+    },
+    {
+      "parameters": {
+        "maxItems": 30,
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        640,
+        176
+      ],
+      "id": "d773effd-7396-43e3-a42d-ceb74f978911",
+      "name": "22 ruedas"
+    },
+    {
+      "parameters": {
+        "url": "https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1104,
+        176
+      ],
+      "id": "18f8034b-2e88-4e05-b3a0-6b6fbeb3a464",
+      "name": "tna"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "average",
+              "field": "tnaClientes"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        176
+      ],
+      "id": "be97d14e-ba17-490f-bc39-3624bdf960c5",
+      "name": "TNA"
+    },
+    {
+      "parameters": {
+        "url": "https://api.argentinadatos.com/v1/finanzas/indices/inflacion",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1536,
+        176
+      ],
+      "id": "8e1837ea-1007-4297-88f3-1ccfc8e5528f",
+      "name": "ipc"
+    },
+    {
+      "parameters": {
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        176
+      ],
+      "id": "da17bf07-15eb-4124-9c67-f9e717f2f192",
+      "name": "IPC"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1997c27d-5cd0-4de9-ac34-ab0b7cc1b280",
+              "name": "mepHoy",
+              "value": "={{ $('MEP hoy').first().json.venta }}",
+              "type": "number"
+            },
+            {
+              "id": "73bd0a0f-5973-4583-be02-3a1f57de1fea",
+              "name": "mepAntes",
+              "value": "={{ $('MEP hace 30d1').first().json.venta }}",
+              "type": "number"
+            },
+            {
+              "id": "cda9f8a0-9ae7-4f0d-b322-d4294bb36f2c",
+              "name": "tna",
+              "value": "={{ $('TNA').first().json.average_tnaClientes }}",
+              "type": "number"
+            },
+            {
+              "id": "311e64a2-36a9-437b-997f-b2bd5edb0fb7",
+              "name": "ipc",
+              "value": "={{ $('IPC').first().json.valor }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1984,
+        176
+      ],
+      "id": "47e55126-ebe2-4a45-a917-7958c8e5dce2",
+      "name": "valoresparacalculos"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Sos analista de mercados argentino. Con estos datos:{{ $('calculos').item.json[\"carryUSD (%)\"] }}% - {{ $('calculos').item.json[\"varMEP (%)\"] }}% - {{ $('calculos').item.json.tna }} - {{ $('calculos').item.json.ipc }}%. escribí un veredicto de máximo 3 líneas sobre si el carry en pesos está positivo o negativo y qué cambió. Sin recomendaciones de inversión."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3104,
+        176
+      ],
+      "id": "90a9a5d0-16e1-4d06-8d10-d02ee898ad05",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        384
+      ],
+      "id": "c3b5f378-ada2-44a0-a1f2-eaafb7b75677",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "chatId": "",
+        "text": "={{ $('calculos').first().json.carryUSD >= 0 ? '🟢' : '🔴' }} Radar de carry\nPlazo fijo 30d: {{ Math.round($('calculos').first().json.tna * 3000 / 365 * 100) / 100 }}% | MEP 30d: {{ $('calculos').first().json['varMEP (%)'] || $('calculos').first().json.varMEP }}%\nCarry en USD: {{ $('calculos').first().json['carryUSD (%)'] || $('calculos').first().json.carryUSD }}% | Real vs IPC: {{ $('calculos').first().json['carryReal (%)'] || $('calculos').first().json.carryReal }}%\n\n{{ $('Basic LLM Chain').first().json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3472,
+        176
+      ],
+      "id": "dc2ea9d3-1c6b-4890-a91d-30260a03aea2",
+      "name": "mensaje a telegram con los datos",
+      "webhookId": "e122ded8-e000-4b8f-b4f7-14100ae3fad5"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "Historico Carry"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "Historico Carry"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $now.toFormat('yyyy-MM-dd') }}",
+            "carryUSD": "={{ $json[\"carryUSD (%)\"] }}",
+            "signo": "={{ $json.carryUSD >= 0 ? 'positivo' : 'negativo' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "carryUSD",
+              "displayName": "carryUSD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "signo",
+              "displayName": "signo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2432,
+        176
+      ],
+      "id": "ea5870a6-6197-46b6-99d3-9d0b62c72b9c",
+      "name": "agregar valores a sheets"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "Historico Carry"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "cachedResultName": "Historico Carry"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2656,
+        176
+      ],
+      "id": "5bb0449f-7259-46c2-ad91-7f9f1ff45434",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4af9dc33-2e60-415e-8593-de56c321d1c6",
+              "leftValue": "={{ $('calculos').first().json.carryUSD >= 0 ? 'positivo' : 'negativo' }}",
+              "rightValue": "={{ $json.signo }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2880,
+        192
+      ],
+      "id": "7d2df242-4418-473f-b3d5-18f51a04b1ed",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9e019951-7d0a-4219-97e4-7f1f14adacc5",
+              "name": "varMEP (%)",
+              "value": "={{ Math.round(($json.mepHoy / $json.mepAntes - 1) * 10000) / 100 }}",
+              "type": "number"
+            },
+            {
+              "id": "e127ca1a-64a4-49f6-9a24-db768b57587d",
+              "name": "carryUSD (%)",
+              "value": "={{ Math.round(((1 + $json.tna * 30 / 365) / ($json.mepHoy / $json.mepAntes) - 1) * 10000) / 100 }}",
+              "type": "number"
+            },
+            {
+              "id": "360b0c25-6aa7-49af-a10f-2314437d7f70",
+              "name": "carryReal (%)",
+              "value": "={{ Math.round(((1 + $json.tna * 30 / 365) / (1 + $json.ipc / 100) - 1) * 10000) / 100 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2208,
+        176
+      ],
+      "id": "b3dcafba-abd4-47db-976d-306c0aae26c6",
+      "name": "calculos"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "horario9am": {
+      "main": [
+        [
+          {
+            "node": "MEP hoy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MEP hoy": {
+      "main": [
+        [
+          {
+            "node": "MEP hace 30d",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MEP hace 30d": {
+      "main": [
+        [
+          {
+            "node": "22 ruedas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "22 ruedas": {
+      "main": [
+        [
+          {
+            "node": "MEP hace 30d1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MEP hace 30d1": {
+      "main": [
+        [
+          {
+            "node": "tna",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tna": {
+      "main": [
+        [
+          {
+            "node": "TNA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TNA": {
+      "main": [
+        [
+          {
+            "node": "ipc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ipc": {
+      "main": [
+        [
+          {
+            "node": "IPC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPC": {
+      "main": [
+        [
+          {
+            "node": "valoresparacalculos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "valoresparacalculos": {
+      "main": [
+        [
+          {
+            "node": "calculos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "mensaje a telegram con los datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agregar valores a sheets": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculos": {
+      "main": [
+        [
+          {
+            "node": "agregar valores a sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "f86d1e02-73ac-4b45-b9a7-31e990058252",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "MMAOLHu5KIO3eRv7",
+  "tags": []
+}
